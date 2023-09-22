@@ -1,17 +1,23 @@
 const mongoose = require('mongoose')
 const { Schema } = mongoose
-const AuthSchema = new Schema(
+const TeacherAuthSchema = new Schema(
   {
     fullname: {
       type: String,
       maxLength: 64,
       required: true,
     },
-    phoneno: {
-      type: Number,
-    },
-    picture: {
+    address: {
       type: String,
+      required: true,
+    },
+    school: {
+      type: String,
+      required: true,
+    },
+    educationQualification: {
+      type: String,
+      required: true,
     },
     email: {
       type: String,
@@ -24,14 +30,8 @@ const AuthSchema = new Schema(
       required: true,
       minLength: 8,
     },
-    ads: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: 'Ads',
-      },
-    ],
   },
   { timestamps: true }
 )
 
-module.exports = mongoose.model('User', AuthSchema)
+module.exports = mongoose.model('Teacher', TeacherAuthSchema)

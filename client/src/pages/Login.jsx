@@ -68,11 +68,6 @@ const Login = () => {
         >
           <h1 className="text-center">SIGN IN</h1>
 
-          <div className="text-center mt-3 googleBtn">
-            <GoogleLogin />
-            <h3 className="mt-3">OR</h3>
-          </div>
-
           <div className="my-4">
             <p className="input_label">Email</p>
             <div className="input_container">

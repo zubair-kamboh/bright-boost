@@ -1,46 +1,22 @@
 const asynHandler = require('express-async-handler')
-const AuthModel = require('../models/authModel')
+const AuthModel = require('../models/StudentAuthModel')
 const jwt = require('jsonwebtoken')
 const asyncHandler = require('express-async-handler')
-const authModel = require('../models/authModel')
-const { OAuth2Client } = require('google-auth-library')
+const StudentAuthModel = require('../models/StudentAuthModel')
+const TeacherAuthModel = require('../models/TeacherAuthModel')
 
-const client = new OAuth2Client({
-  clientId:
-    '755428588274-5nl45or7hrlck14neughadquor3bjaph.apps.googleusercontent.com',
-})
+// Student SIGNUP
+const studentSignUp = asynHandler(async (req, res) => {
+  const { fullname, address, school, email, password } = req.body
 
-// nodemailer
-const nodemailer = require('nodemailer')
-let transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false, // true for 465, false for other ports
-  auth: {
-    user: 'zubairkamboh9010@gmail.com', // generated ethereal user
-    pass: 'bsssefjgpbwpaqld', // generated ethereal password
-  },
-  tls: {
-    rejectUnauthorized: false,
-  },
-})
+  console.log(fullname, address, school, email, password)
 
-// SIGNUP
-const signup = asynHandler(async (req, res) => {
-  const { fullname, phoneno, email, password, password2 } = req.body
-
-  if (!fullname || !phoneno || !email || !password || !password2) {
+  if (!fullname || !address || !school || !email || !password) {
     res.status(400)
     throw new Error('Please include all fields')
   }
 
-  // check both passwords
-  if (password !== password2) {
-    res.status(400)
-    throw new Error('Passwords do not match')
-  }
-
-  const emailExist = await AuthModel.findOne({ email })
+  const emailExist = await StudentAuthModel.findOne({ email })
 
   // check if email already exists
   if (emailExist) {
@@ -48,334 +24,140 @@ const signup = asynHandler(async (req, res) => {
     throw new Error('Email already exists')
   }
 
-  // setup nodemailer
-  const token = jwt.sign(
-    { fullname, email, phoneno, password },
-    process.env.JWT_SECRET_KEY,
-    {
-      expiresIn: '20m',
-    }
-  )
-
-  // remove this after testing
-  // res.json({
-  //   token,
-  // })
-
-  try {
-    await transporter.sendMail({
-      from: 'noreply@yahoo.com',
-      to: email,
-      subject: 'Email Activation Link',
-      html: `
-      <h1>Please verify your account by clicking below link</h1>
-      <a href='${process.env.CLIENT_URI}/activate/${token}'>${process.env.CLIENT_URI}/activate/${token}</a>
-      `,
-    })
-
-    res.json({
-      successMsg: 'Activation link sent to your email! please check.',
-    })
-  } catch (e) {
-    throw new Error(e)
-  }
-})
-
-// @route     /api/auth/activate
-// @access    private
-const activateAccount = asynHandler(async (req, res) => {
-  // get token
-  const token = req.headers.authorization
-    ? req.headers.authorization.split(' ')[1]
-    : null
-
-  // no token
-  if (!token) {
-    res.status(401)
-    throw new Error('Not authorized! no token')
-  }
-
-  // token exists
-  const tokenVerified = jwt.verify(token, process.env.JWT_SECRET_KEY)
-
-  // tempered token
-  if (!tokenVerified) {
-    res.status(403)
-    throw new Error('Invalid or expired token')
-  }
-
-  const { fullname, phoneno, email, password } = tokenVerified
-
-  // check if user alread exists
-  const existUser = await AuthModel.findOne({ email })
-  if (existUser) {
-    res.status(401)
-    throw new Error('User already exists with that email')
-  }
-
-  // save user
-  const user = new AuthModel({
+  const doc = new StudentAuthModel({
     fullname,
-    phoneno,
+    address,
+    school,
     email,
     password,
   })
 
-  await user.save()
-
-  if (!user) {
-    throw new Error('Something went wrong')
-  }
-
-  // generate new token
-  const newToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET_KEY, {
-    expiresIn: '1d',
-  })
-
-  res
-    .status(201)
-    .json({ successMsg: 'Registered Successfully!', token: newToken })
+  await doc.save()
+  res.status(200).json({ successMsg: 'Student saved in db!' })
 })
 
-// SIGNIN
-const signin = asynHandler(async (req, res) => {
-  const { email, password, password2 } = req.body
+// StudentSignIn
+const studentSignIn = asynHandler(async (req, res) => {
+  const { email, password } = req.body
 
-  if (!email || !password || !password2) {
+  if (!email || !password) {
     res.status(400)
     throw new Error('Please include all fields')
   }
 
-  // check both passwords
-  if (password !== password2) {
-    res.status(400)
-    throw new Error('Passwords do not match')
-  }
-  // check passwords length
-  if (password.length < 8 || password2.length < 8) {
-    res.status(400)
-    throw new Error('Minimum length should be 8 characters')
-  }
-
   // generate token
-  const token = jwt.sign({ email }, process.env.JWT_SECRET_KEY, {
+  const token = jwt.sign({ email }, 'zubair123', {
     expiresIn: '1d',
   })
 
-  const user = await AuthModel.findOne({ email })
+  const student = await StudentAuthModel.findOne({ email })
 
   // check if email do not exists
-  if (!user) {
+  if (!student) {
     res.status(400)
     throw new Error("Email does'nt exist! Please sign up first")
   }
 
   // if passwords do not match
-  if (user.password !== password) {
+  if (student.password !== password) {
     res.status(400)
     throw new Error('Incorrect password!')
   }
 
-  // sign in user
+  // sign in student
   res.json({
     successMsg: 'Sign in successfully!',
     token,
-    user: {
-      _id: user._id,
-      email: user.email,
-      phoneno: user.phoneno,
-      fullname: user.fullname,
-      ads: user.ads,
+    student: {
+      _id: student._id,
+      fullname: student.fullname,
+      address: student.address,
+      school: student.school,
+      email: student.email,
     },
   })
 })
 
-// route      /api/auth/forget
-// access     public
-// method     post
-const forgotPassword = asynHandler(async (req, res) => {
-  const { email } = req.body
-  if (!email) {
-    throw new Error('Please enter your email')
-  }
+// Teacher SIGNUP
+const teacherSignUp = asynHandler(async (req, res) => {
+  const { fullname, address, school, educationQualification, email, password } =
+    req.body
 
-  // check if user exist
-  const user = await AuthModel.findOne({ email })
-  if (!user) {
-    res.status(400)
-    throw new Error('No user exist with that email')
-  }
-
-  // generate token
-  const token = jwt.sign({ email }, process.env.JWT_SECRET_KEY, {
-    expiresIn: '20m',
-  })
-
-  try {
-    await transporter.sendMail({
-      from: 'noreply@yahoo.com',
-      to: email,
-      subject: 'Password Change Link',
-      html: `
-      <h1>Please change your account password by clicking below link</h1>
-      <a href='${process.env.CLIENT_URI}/change-password/${token}'>${process.env.CLIENT_URI}/change-password/${token}</a>
-      `,
-    })
-
-    res.json({
-      successMsg: 'Please check your email.',
-    })
-  } catch (e) {
-    res.status(500)
-    throw new Error('Something went wrong')
-  }
-})
-
-// route      /api/auth/change-password
-// access     private
-// method     put
-const changePassword = asynHandler(async (req, res) => {
-  const { password, password2 } = req.body
-  if (!password || !password2) {
+  if (
+    (!fullname || !address || !school,
+    !educationQualification || !email || !password)
+  ) {
     res.status(400)
     throw new Error('Please include all fields')
   }
 
-  // check both passwords
-  if (password !== password2) {
+  const emailExist = await TeacherAuthModel.findOne({ email })
+
+  // check if email already exists
+  if (emailExist) {
     res.status(400)
-    throw new Error('Passwords do not match')
-  }
-  // check passwords length
-  if (password.length < 8 || password2.length < 8) {
-    res.status(400)
-    throw new Error('Minimum length should be 8 characters')
+    throw new Error('Email already exists')
   }
 
-  // get token
-  const token = req.headers.authorization
-    ? req.headers.authorization.split(' ')[1]
-    : null
-
-  // no token
-  if (!token) {
-    res.status(401)
-    throw new Error('Not authorized! no token')
-  }
-
-  // token exists
-  const tokenVerified = jwt.verify(token, process.env.JWT_SECRET_KEY)
-
-  // tempered token
-  if (!tokenVerified) {
-    res.status(403)
-    throw new Error('Invalid or expired token')
-  }
-
-  const { email } = tokenVerified
-
-  // check if user alread exists and update
-  const findUser = await AuthModel.findOne({ email })
-  const updatedUser = await AuthModel.updateOne(
-    { _id: findUser._id },
-    {
-      password,
-    }
-  )
-
-  if (!updatedUser) {
-    throw new Error('Something went wrong')
-  }
-
-  res.json({ successMsg: 'Your password has been updated' })
-})
-
-// LOGIN WITH GOOGLE
-// route      /api/auth/googlelogin
-// access     public
-// method     post
-const googleLogin = asyncHandler(async (req, res) => {
-  // get token
-  const token = req.headers.authorization
-    ? req.headers.authorization.split(' ')[1]
-    : null
-
-  const verifiedToken = await client.verifyIdToken({
-    idToken: token,
-    audience:
-      '755428588274-5nl45or7hrlck14neughadquor3bjaph.apps.googleusercontent.com',
+  const doc = new TeacherAuthModel({
+    fullname,
+    address,
+    school,
+    educationQualification,
+    email,
+    password,
   })
 
-  const { name, email, picture, email_verified } = verifiedToken.payload
-
-  // check invalid token
-  if (!verifiedToken) {
-    res.status(403)
-    throw new Error('Not authorized! token invalid')
-  }
-
-  if (!email_verified) {
-    res.status(400)
-    throw new Error('Email not verified')
-  }
-
-  // find user in db
-  const user = await AuthModel.findOne({ email }).select('-password')
-  // if user already exists
-  if (user) {
-    const token = jwt.sign({ email }, process.env.JWT_SECRET_KEY, {
-      expiresIn: '7d',
-    })
-
-    res.json({ token, successMsg: 'Logged in successfully', user })
-  }
-
-  if (!user) {
-    // if user doesnot exist create new user
-    const token = jwt.sign({ email }, process.env.JWT_SECRET_KEY, {
-      expiresIn: '7d',
-    })
-
-    const data = {
-      fullname: name,
-      email,
-      picture,
-      password: `${email}.${token}`,
-    }
-
-    const user = new AuthModel(data)
-    await user.save()
-
-    if (user) {
-      res.json({ token, successMsg: 'Logged in successfully', user })
-    }
-  }
+  await doc.save()
+  res.status(200).json({ successMsg: 'Teacher saved in db!' })
 })
 
-// CURRENT USER
-// route      /api/auth/me
-// access     private
-// method     get
-const currentUser = asyncHandler(async (req, res) => {
-  const { _id, fullname, email, phoneno, picture } = await authModel.findById(
-    req.user._id
-  )
+// Teacher Sign In
+const teacherSignIn = asynHandler(async (req, res) => {
+  const { email, password } = req.body
 
+  if (!email || !password) {
+    res.status(400)
+    throw new Error('Please include all fields')
+  }
+
+  // generate token
+  const token = jwt.sign({ email }, 'zubair123', {
+    expiresIn: '1d',
+  })
+
+  const teacher = await TeacherAuthModel.findOne({ email })
+
+  // check if email do not exists
+  if (!teacher) {
+    res.status(400)
+    throw new Error("Email does'nt exist! Please sign up first")
+  }
+
+  // if passwords do not match
+  if (teacher.password !== password) {
+    res.status(400)
+    throw new Error('Incorrect password!')
+  }
+
+  // sign in teacher
   res.json({
-    id: _id,
-    fullname,
-    email,
-    phoneno,
-    picture,
+    successMsg: 'Sign in successfully!',
+    token,
+    teacher: {
+      _id: teacher._id,
+      fullname: teacher.fullname,
+      address: teacher.address,
+      school: teacher.school,
+      educationQualification: teacher.educationQualification,
+      email: teacher.email,
+    },
   })
 })
 
 module.exports = {
-  signup,
-  signin,
-  currentUser,
-  activateAccount,
-  forgotPassword,
-  changePassword,
-  googleLogin,
+  studentSignUp,
+  studentSignIn,
+  teacherSignIn,
+  teacherSignUp,
 }

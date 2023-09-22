@@ -1,6 +1,6 @@
 const AdModel = require('../models/adModel')
 const asyncHandler = require('express-async-handler')
-const AuthModel = require('../models/authModel')
+const AuthModel = require('../models/StudentAuthModel')
 
 // POST ADS
 const postAd = asyncHandler(async (req, res) => {
