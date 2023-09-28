@@ -1,6 +1,6 @@
 const mongoose = require('mongoose')
 const { Schema } = mongoose
-const StudentAuthSchema = new Schema(
+const AdminSchema = new Schema(
   {
     fullname: {
       type: String,
@@ -8,10 +8,6 @@ const StudentAuthSchema = new Schema(
       required: true,
     },
     address: {
-      type: String,
-      required: true,
-    },
-    school: {
       type: String,
       required: true,
     },
@@ -26,12 +22,8 @@ const StudentAuthSchema = new Schema(
       required: true,
       minLength: 8,
     },
-    paymentstatus: {
-      type: Boolean,
-      default: false,
-    },
   },
   { timestamps: true }
 )
 
-module.exports = mongoose.model('Student', StudentAuthSchema)
+module.exports = mongoose.model('Admin', AdminSchema)

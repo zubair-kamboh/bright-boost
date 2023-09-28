@@ -18,8 +18,10 @@ app.use(
 app.use(cors())
 
 // router
-app.use('/api', require('./routes/adRoutes'))
 app.use('/api/auth', require('./routes/authRoutes'))
+app.use('/payment', require('./routes/paymentRoutes'))
+app.use('/tutor', require('./routes/tutorRoutes'))
+app.use('/management', require('./routes/managementRoutes'))
 
 // error handler
 app.use(errorHandler)

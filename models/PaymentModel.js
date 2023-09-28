@@ -1,47 +1,42 @@
 const mongoose = require('mongoose')
 const { Schema } = mongoose
-
-const AdSchema = new Schema(
+const PaymentSchema = new Schema(
   {
-    title: {
+    cardnumber: {
+      type: Number,
+      required: true,
+    },
+
+    cardtype: {
       type: String,
       required: true,
     },
-    description: {
+    expirymonth: {
+      type: Number,
+      required: true,
+    },
+    expiryyear: {
+      type: Number,
+      required: true,
+    },
+    ccv: {
       type: String,
       required: true,
     },
-    brand: {
+    ccv: {
       type: String,
       required: true,
     },
-    condition: {
+    validity: {
       type: String,
       required: true,
     },
     price: {
-      type: Number,
-      required: true,
-    },
-    category: {
       type: String,
-      required: true,
-    },
-    images: {
-      type: [String],
-      required: true,
-    },
-    location: {
-      type: String,
-      required: true,
-    },
-    user: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
       required: true,
     },
   },
   { timestamps: true }
 )
 
-module.exports = mongoose.model('Ads', AdSchema)
+module.exports = mongoose.model('Payment', PaymentSchema)

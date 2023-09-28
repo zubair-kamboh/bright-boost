@@ -1,5 +1,4 @@
 const { default: mongoose } = require('mongoose')
-require('../models/adModel')
 require('../models/StudentAuthModel')
 
 const connection = async () => {
