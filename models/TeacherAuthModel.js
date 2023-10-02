@@ -22,6 +22,10 @@ const TutorEnrollmentSchema = new Schema({
     type: String,
     required: true,
   },
+  qualifications: {
+    type: String,
+    required: true,
+  },
 })
 
 const TeacherAuthSchema = new Schema(
